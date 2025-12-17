@@ -1,0 +1,7 @@
+die/
+models/
+saved_models/
+datasets/
+*.bat
+*.md
+*.sh
