@@ -79,7 +79,7 @@ def train_RL(datas, span_selector,Env):
 if __name__ == '__main__':
     # with open('datasets/yelp/yelp_70_300.json', 'r', encoding='utf-8') as f:
     with open('datasets/yelp/yelp_100_300_10k.json', 'r', encoding='utf-8') as f:
-        datas = json.load(f)[:10]
+        datas = json.load(f)[:3000]
     random.shuffle(datas)
     span_selector = SpanSelector()
     local_model_fp = 'models/bert-base-uncased-yelp-polarity'

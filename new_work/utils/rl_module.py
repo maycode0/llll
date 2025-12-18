@@ -217,7 +217,7 @@ class AttackEnv:
     def _get_pred_prob(self, text):
         """辅助函数：获取本地模型对正确类别的预测概率"""
         with torch.no_grad():
-            inputs = self.local_tokenizer(text, return_tensors='pt').to(self.local_model.device)
+            inputs = self.local_tokenizer(text, return_tensors='pt', padding=True, truncation=True).to(self.local_model.device)
             logits = self.local_model(**inputs).logits
             prob = torch.softmax(logits, dim=1)[0, self.true_label].item()
         return prob, logits[:,self.true_label].cpu()
