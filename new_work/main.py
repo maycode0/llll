@@ -79,20 +79,20 @@ def train_RL(datas, span_selector,Env):
 if __name__ == '__main__':
     # with open('datasets/yelp/yelp_70_300.json', 'r', encoding='utf-8') as f:
     with open('datasets/yelp/yelp_100_300_10k.json', 'r', encoding='utf-8') as f:
-        datas = json.load(f)[:3000]
+        datas = json.load(f)[:10]
     random.shuffle(datas)
     span_selector = SpanSelector()
     local_model_fp = 'models/bert-base-uncased-yelp-polarity'
     local_model = BertForSequenceClassification.from_pretrained(local_model_fp).to('cuda')
     local_model.eval()
-    local_tokenizer = BertTokenizer.from_pretrained(local_model_fp)
+    local_tokenizer = BertTokenizer.from_pretrained(local_model_fp,max_length=512)
     global_model_fp = 'models/global_models/global_scorer_yelp'
     global_model = DistilBertForSequenceClassification.from_pretrained(global_model_fp).to('cuda')
     global_model.eval()
-    global_tokenizer = DistilBertTokenizer.from_pretrained(global_model_fp)
+    global_tokenizer = DistilBertTokenizer.from_pretrained(global_model_fp,max_length=512)
 
     bart_fp = 'models/bart-base'
-    bart_tokenizer = BartTokenizer.from_pretrained(bart_fp)
+    bart_tokenizer = BartTokenizer.from_pretrained(bart_fp,max_length=512)
     fill_model = BartForConditionalGeneration.from_pretrained(bart_fp).to('cuda')
     fill_model.eval()
     Env = AttackEnv(local_model, local_tokenizer, global_model, global_tokenizer, fill_model, bart_tokenizer, max_steps=5)
