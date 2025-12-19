@@ -5,3 +5,4 @@ saved_models/
 *.bat
 *.md
 *.sh
+*.pth

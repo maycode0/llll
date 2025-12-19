@@ -137,15 +137,12 @@ def train():
     LR = 5e-4
     LAMBDA_SPARSE = 10  # 控制子集大小，值越大，选出的词越少
     TAU_START = 1.0      # Gumbel-Softmax 起始温度
-    TAU_END = 0.01        # 结束温度
+    TAU_END = 0.001        # 结束温度
 
-    # 模拟 1000 条数据 (请替换为你的真实数据加载逻辑)
-    # texts = ["这是一个非常好的产品，我非常喜欢它。" for _ in range(1000)]
-    # labels = [1 for _ in range(1000)]
     # 加载 Yelp 数据集
     start = 0
-    end = 10000
-    with open('datasets/yelp/yelp_100_300_10k.json', 'r', encoding='utf-8') as f:
+    end = 50000
+    with open('datasets/yelp/yelp_100_300_50k_pro.json', 'r', encoding='utf-8') as f:
         train_data = json.load(f)
     texts = [' '.join(item['text'].split()).lower() for item in train_data[start:end]]
     labels = [item['label'] for item in train_data[start:end]]
@@ -157,8 +154,10 @@ def train():
 
     # 初始化模型
     model = RationaleModel(BERT_PATH, lr=LR).to(device)
-
-    print("开始训练 Gating Network...")
+    # --- Step 退火核心准备 ---
+    total_steps = len(dataloader) * EPOCHS # 计算总训练步数
+    global_step = 0 # 全局步数计数器
+    print(f"开始训练 Gating Network... 总步数: {total_steps}")
     model.train()
     # --- 用于记录损失的列表 ---
     history = {
@@ -180,6 +179,13 @@ def train():
             attention_mask = batch['attention_mask'].to(device)
             labels = batch['label'].to(device)
 
+            
+            # --- 【核心修改：Step 级别线性退火】 ---
+            # 每一小步都微调 tau
+            tau = TAU_START - (TAU_START - TAU_END) * (global_step / total_steps)
+            # 防止 global_step 超过 total_steps 导致 tau 变成负数
+            tau = max(tau, TAU_END)
+
             # 前向传播
             logits, mask = model(input_ids, attention_mask, tau=tau)
             
@@ -191,11 +197,15 @@ def train():
             total_adv_loss += adv_loss
             total_sparse_loss += sparse_loss
             total_epoch_loss += total_loss
+
+            # 更新全局步数
+            global_step += 1
+
             # --- 实时更新进度条右侧的统计信息 ---
             pbar.set_postfix({
                 'adv_loss': f"{adv_loss:.4f}",
                 'sparsity': f"{sparse_loss:.4f}",
-                'tau': f"{tau:.2f}"
+                'tau': f"{tau:.3f}"
             })
 
 
