@@ -7,6 +7,8 @@ from torch.utils.data import Dataset, DataLoader
 import json
 from tqdm import tqdm
 import matplotlib.pyplot as plt # 导入绘图库
+import time
+
 
 class GatingNetwork(nn.Module):
     def __init__(self, bert_hidden_dim=768, rnn_hidden_dim=256):
@@ -105,11 +107,11 @@ class TextDataset(Dataset):
             'label': torch.tensor(self.labels[item], dtype=torch.long)
         }
 # --- 2. 可视化工具：查看模型选了哪些词 ---
-def visualize_rationale(text, mask, tokenizer):
+def visualize_rationale(text, mask, tokenizer,MAX_LEN):
     """
     将 mask 作用于文本并打印，被选中的词会加上中括号
     """
-    tokens = tokenizer.convert_ids_to_tokens(tokenizer.encode(text, truncation=True, max_length=128))
+    tokens = tokenizer.convert_ids_to_tokens(tokenizer.encode(text, truncation=True, max_length=MAX_LEN))
     # mask 形状为 [seq_len], 转换为 numpy
     m = mask.cpu().detach().numpy()
     
@@ -121,7 +123,7 @@ def visualize_rationale(text, mask, tokenizer):
         if m[i] > 0.5: # 被选中的词
             result.append(f"【{token}】")
         else:
-            result.append(token)
+            result.append(f'{token} ')
     return "".join(result).replace("##", "")
 
 # --- 3. 主训练流程 ---
@@ -129,20 +131,20 @@ def train():
     # 超参数设置
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     BERT_PATH = "models/bert-base-uncased-yelp-polarity" # 替换为你本地微调好的BERT路径
-    MAX_LEN = 512
-    BATCH_SIZE = 16
-    EPOCHS = 5
-    LR = 1e-4
-    LAMBDA_SPARSE = 0.05 # 控制子集大小，值越大，选出的词越少
+    MAX_LEN = 300
+    BATCH_SIZE = 32
+    EPOCHS = 30
+    LR = 5e-4
+    LAMBDA_SPARSE = 10  # 控制子集大小，值越大，选出的词越少
     TAU_START = 1.0      # Gumbel-Softmax 起始温度
-    TAU_END = 0.1        # 结束温度
+    TAU_END = 0.01        # 结束温度
 
     # 模拟 1000 条数据 (请替换为你的真实数据加载逻辑)
     # texts = ["这是一个非常好的产品，我非常喜欢它。" for _ in range(1000)]
     # labels = [1 for _ in range(1000)]
     # 加载 Yelp 数据集
     start = 0
-    end = 1000
+    end = 10000
     with open('datasets/yelp/yelp_100_300_10k.json', 'r', encoding='utf-8') as f:
         train_data = json.load(f)
     texts = [' '.join(item['text'].split()).lower() for item in train_data[start:end]]
@@ -151,6 +153,7 @@ def train():
     tokenizer = BertTokenizer.from_pretrained(BERT_PATH)
     dataset = TextDataset(texts, labels, tokenizer, MAX_LEN)
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+    # dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     # 初始化模型
     model = RationaleModel(BERT_PATH, lr=LR).to(device)
@@ -169,6 +172,8 @@ def train():
         
         total_adv_loss = 0
         total_sparse_loss = 0
+        total_epoch_loss = 0
+
         pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{EPOCHS}", leave=True)
         for batch in pbar:
             input_ids = batch['input_ids'].to(device)
@@ -185,6 +190,7 @@ def train():
 
             total_adv_loss += adv_loss
             total_sparse_loss += sparse_loss
+            total_epoch_loss += total_loss
             # --- 实时更新进度条右侧的统计信息 ---
             pbar.set_postfix({
                 'adv_loss': f"{adv_loss:.4f}",
@@ -196,7 +202,7 @@ def train():
         # 每个 Epoch 结束打印状态
         avg_adv = total_adv_loss / len(dataloader)
         avg_sparse = total_sparse_loss / len(dataloader)
-        avg_total = epoch_total / len(dataloader)
+        avg_total = total_epoch_loss / len(dataloader)
 
         history['adv_loss'].append(avg_adv)
         history['sparsity_loss'].append(avg_sparse)
@@ -207,7 +213,7 @@ def train():
 
         # 可视化最后一条样本的选取结果
         sample_text = texts[0]
-        sample_res = visualize_rationale(sample_text, mask[0], tokenizer)
+        sample_res = visualize_rationale(sample_text, mask[0], tokenizer, MAX_LEN)
         print(f"采样效果: {sample_res}\n" + "-"*30)
 
 
@@ -224,9 +230,9 @@ def train():
     plt.ylabel('Loss Value')
     plt.legend()
     plt.grid(True)
-
+    plt.savefig(f'training_losses_{time.strftime("%Y%m%d%H%M%S")}.png')
     # 保存训练好的 Gating Network
-    torch.save(model.gating_net.state_dict(), "gating_network.pth")
+    torch.save(model.gating_net.state_dict(), f"gating_network_{time.strftime('%Y%m%d%H%M%S')}.pth")
     print("训练完成，Gating Network 已保存。")
 
 train()
