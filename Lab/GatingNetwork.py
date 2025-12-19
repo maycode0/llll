@@ -49,6 +49,7 @@ class RationaleModel(nn.Module):
         with torch.no_grad(): # 获取具有上下文的embedding
             outputs = self.bert.bert(input_ids, attention_mask=attention_mask)
             last_hidden = outputs.last_hidden_state #经过Transformer层后的信息，包含[CLS]
+            # last_hidden[:,0,:] = 0 # 强制将 [CLS] 位的 embedding 设为 0
             raw_embeddings = self.bert.bert.embeddings(input_ids) # [batch, seq_len, 768]，未经过Transformer层
         mask, _ = self.gating_net(last_hidden,tau=tau)
 
@@ -125,15 +126,32 @@ def visualize_rationale(text, mask, tokenizer,MAX_LEN):
         else:
             result.append(f'{token} ')
     return "".join(result).replace("##", "")
-
+def visualize_correct(input_ids, mask, tokenizer):
+            # 直接把 ID 转为 Token 列表
+            tokens = tokenizer.convert_ids_to_tokens(input_ids)
+            m = mask.cpu().detach().numpy()
+            
+            result = []
+            for i, token in enumerate(tokens):
+                # 过滤掉填充位，但保留语义词
+                if token == '[PAD]': continue
+                if token in ['[CLS]', '[SEP]']: 
+                    result.append(token)
+                    continue
+                
+                if m[i] > 0.5:
+                    result.append(f"【{token}】")
+                else:
+                    result.append(token)
+            return " ".join(result).replace(" ##", "")
 # --- 3. 主训练流程 ---
 def train():
     # 超参数设置
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     BERT_PATH = "models/bert-base-uncased-yelp-polarity" # 替换为你本地微调好的BERT路径
     MAX_LEN = 300
-    BATCH_SIZE = 32
-    EPOCHS = 30
+    BATCH_SIZE = 128
+    EPOCHS = 17
     LR = 5e-4
     LAMBDA_SPARSE = 10  # 控制子集大小，值越大，选出的词越少
     TAU_START = 1.0      # Gumbel-Softmax 起始温度
@@ -222,9 +240,14 @@ def train():
         print(f"分类 Loss: {avg_adv:.4f} | 词量占比 (Sparsity): {avg_sparse:.4f}")
 
         # 可视化最后一条样本的选取结果
-        sample_text = texts[0]
-        sample_res = visualize_rationale(sample_text, mask[0], tokenizer, MAX_LEN)
-        print(f"采样效果: {sample_res}\n" + "-"*30)
+        # sample_text = texts[0]
+        # sample_res = visualize_rationale(sample_text, mask[0], tokenizer, MAX_LEN)
+        # print(f"采样效果: {sample_res}\n" + "-"*30)
+        last_input_ids = input_ids[0] 
+        last_mask = mask[0]
+        sample_res = visualize_correct(last_input_ids, last_mask, tokenizer)
+        print(f"Epoch {epoch+1} 真实采样效果 (来自当前 Batch):")
+        print(f"{sample_res}\n" + "-"*30)
 
 
     # --- 4. 绘制并保存折线图 ---
@@ -242,7 +265,7 @@ def train():
     plt.grid(True)
     plt.savefig(f'training_losses_{time.strftime("%Y%m%d%H%M%S")}.png')
     # 保存训练好的 Gating Network
-    torch.save(model.gating_net.state_dict(), f"gating_network_{time.strftime('%Y%m%d%H%M%S')}.pth")
+    torch.save(model.gating_net.state_dict(), f"save_models/gating_network_{time.strftime('%Y%m%d%H%M%S')}.pth")
     print("训练完成，Gating Network 已保存。")
 
 train()

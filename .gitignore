@@ -1,6 +1,6 @@
 die/
 models/
-saved_models/
+save_models/
 
 *.bat
 *.md
