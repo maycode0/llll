@@ -1,0 +1,11 @@
+mode,sample_id,status,total_queries,alpha_before,alpha_after,lambda_before,lambda_after,r_joint,r_syn,update_reason,successful_group,successful_replacement
+sample_reset,imdb-train-000001,success,1,1.0,1.2,1.0,1.0,1.0,0.5,increase_alpha,"[102, 103]","[(103, 'kind')]"
+sample_reset,imdb-train-000002,failed,24,1.0,1.0,1.0,1.0,0.0,0.0,no_update,,
+sample_reset,imdb-train-000003,failed,11,1.0,1.0,1.0,1.0,0.0,0.0,no_update,,
+sample_reset,imdb-train-000004,failed,0,1.0,1.2,1.0,1.0,1.0,0.0,increase_alpha,,
+sample_reset,imdb-train-000005,failed,1,1.0,1.0,1.0,1.0,0.0,0.0,no_update,,
+sample_reset,imdb-train-000006,failed,1,1.0,1.0,1.0,1.0,0.0,0.0,no_update,,
+sample_reset,imdb-train-000007,success,4,1.0,1.0,1.0,1.0,0.0,0.0,no_update,"[124, 126]","[(126, 'good')]"
+sample_reset,imdb-train-000008,failed,10,1.0,1.0,1.0,1.0,0.0,0.0,no_update,,
+sample_reset,imdb-train-000009,failed,12,1.0,1.0,1.0,1.0,0.0,0.0,no_update,,
+sample_reset,imdb-train-000010,failed,0,1.0,1.0,1.0,1.0,0.0,0.0,no_update,,

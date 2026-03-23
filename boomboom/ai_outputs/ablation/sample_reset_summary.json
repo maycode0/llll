@@ -1,0 +1,9 @@
+{
+  "mode": "sample_reset",
+  "sample_count": 2,
+  "success_count": 2,
+  "success_rate": 1.0,
+  "avg_queries": 1.5,
+  "avg_alpha_after": 1.1,
+  "avg_lambda_after": 1.1
+}

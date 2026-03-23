@@ -1,0 +1,9 @@
+{
+  "mode": "global_carry",
+  "sample_count": 2,
+  "success_count": 2,
+  "success_rate": 1.0,
+  "avg_queries": 2.0,
+  "avg_alpha_after": 1.1,
+  "avg_lambda_after": 1.2
+}

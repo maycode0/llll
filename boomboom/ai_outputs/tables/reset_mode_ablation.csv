@@ -1,0 +1,5 @@
+mode,sample_id,status,total_queries,alpha_before,alpha_after,lambda_before,lambda_after,r_joint,r_syn,update_reason,successful_group,successful_replacement
+sample_reset,demo-1,success,2,1.0,1.0,1.0,1.2,0.0,1.0,increase_lambda,"[3, 5]","[5, 'bad']"
+sample_reset,demo-2,success,1,1.0,1.2,1.0,1.0,1.0,0.0,increase_alpha,"[3, 4]","[3, 'barely']"
+global_carry,demo-1,success,2,1.0,1.0,1.0,1.2,0.0,1.0,increase_lambda,"[3, 5]","[5, 'bad']"
+global_carry,demo-2,success,2,1.0,1.2,1.2,1.2,1.0,0.0,increase_alpha,"[2, 3]","[3, 'barely']"
